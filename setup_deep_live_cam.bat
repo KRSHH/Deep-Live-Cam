@@ -44,12 +44,12 @@ if exist Deep-Live-Cam (
     set /p overwrite="Do you want to overwrite? (Y/N): "
     if /i "%overwrite%"=="Y" (
         rmdir /s /q Deep-Live-Cam
-        git clone https://github.com/hacksider/Deep-Live-Cam.git
+        git clone https://github.com/KRSHH/Deep-Live-Cam.git
     ) else (
         echo Skipping clone, using existing directory.
     )
 ) else (
-    git clone https://github.com/hacksider/Deep-Live-Cam.git
+    git clone https://github.com/KRSHH/Deep-Live-Cam.git
 )
 cd Deep-Live-Cam
 
