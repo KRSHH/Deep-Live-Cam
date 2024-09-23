@@ -25,6 +25,10 @@ from modules.utilities import (
     has_image_extension,
 )
 
+os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+os.environ["QT_SCREEN_SCALE_FACTORS"] = "1"
+os.environ["QT_SCALE_FACTOR"] = "1"
+
 ROOT = None
 POPUP = None
 POPUP_LIVE = None
@@ -219,6 +223,7 @@ def create_root(
     root.configure(bg="#1a1a1a")
     root.protocol("WM_DELETE_WINDOW", lambda: destroy())
     root.resizable(True, True)
+    root.attributes("-alpha", 1.0)  # Set window opacity to fully opaque
 
     main_frame = ctk.CTkFrame(root, fg_color="#1a1a1a")
     main_frame.pack(fill="both", expand=True, padx=20, pady=20)
@@ -879,15 +884,43 @@ def init_preview() -> None:
 def update_preview(frame_number: int = 0) -> None:
     if modules.globals.source_path and modules.globals.target_path:
         update_status("Processing...")
-        temp_frame = get_video_frame(modules.globals.target_path, frame_number)
+
+        # Debug: Print the target path and frame number
+        print(
+            f"Target path: {modules.globals.target_path}, Frame number: {frame_number}"
+        )
+
+        temp_frame = None
+        if is_video(modules.globals.target_path):
+            temp_frame = get_video_frame(modules.globals.target_path, frame_number)
+        elif is_image(modules.globals.target_path):
+            temp_frame = cv2.imread(modules.globals.target_path)
+
+        # Debug: Check if temp_frame is None
+        if temp_frame is None:
+            print("Error: temp_frame is None")
+            update_status("Error: Could not read frame from video or image.")
+            return
+
         if modules.globals.nsfw_filter and check_and_ignore_nsfw(temp_frame):
             return
+
         for frame_processor in get_frame_processors_modules(
             modules.globals.frame_processors
         ):
+            # Debug: Print the type of frame_processor
+            print(f"Processing frame with: {type(frame_processor).__name__}")
+
             temp_frame = frame_processor.process_frame(
                 get_one_face(cv2.imread(modules.globals.source_path)), temp_frame
             )
+
+            # Debug: Check if temp_frame is None after processing
+            if temp_frame is None:
+                print("Error: temp_frame is None after processing")
+                update_status("Error: Frame processing failed.")
+                return
+
         image = Image.fromarray(cv2.cvtColor(temp_frame, cv2.COLOR_BGR2RGB))
         image = ImageOps.contain(
             image, (PREVIEW_MAX_WIDTH, PREVIEW_MAX_HEIGHT), Image.LANCZOS
